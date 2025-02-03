@@ -6,16 +6,19 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import earthImage from './assets/earth.jpg';
 import normalImage from './assets/normal.jpg';
 import moonImage from './assets/moon.jpg';
+import blackholeImage from './assets/blackhole.jpg';
 import normal2Image from './assets/normal2.jpg';
 import spaceImage from './assets/space2.jpg';
 import backgroundMusic from './assets/background-music.mp3';
 import laserSound from './assets/laser.mp3';
+import explosionSound from './assets/boom.mp3';
 
 // Import region images
 import newcastle1 from './assets/newcastle1.jpg';
 import newcastle2 from './assets/newcastle2.jpg';
 import sydney from './assets/sydney1.jpg';
-import hanoi from './assets/hanoi.jpg';
+import hanoi1 from './assets/hanoi.jpg';
+import hanoi2 from './assets/phuquoc3.jpg';
 import phuquoc1 from './assets/phuquoc1.jpg';
 import phuquoc2 from './assets/phuquoc2.jpg';
 import sanfrancisco from './assets/sanfrancisco.jpg';
@@ -25,6 +28,7 @@ import nanning from './assets/nanning.jpg';
 import kualalumpur from './assets/kualalumpur.jpg';
 import bangkok from './assets/bangkok.jpg';
 import jakarta from './assets/jakarta.jpg';
+import cat from './assets/cat.jpg';
 
 // Create a new Three.js scene
 const scene = new THREE.Scene();
@@ -60,6 +64,14 @@ const moonMaterial = new THREE.MeshStandardMaterial({ map: moonTexture, normalMa
 const moon = new THREE.Mesh(moonGeometry, moonMaterial);
 moon.position.set(-60, 0, 60);
 scene.add(moon);
+
+// Create the Black Hole geometry and material
+const blackHoleGeometry = new THREE.SphereGeometry(30, 32, 32);
+const blackHoleTexture = new THREE.TextureLoader().load(blackholeImage);
+const blackHoleMaterial = new THREE.MeshBasicMaterial({ map: blackHoleTexture });
+const blackHole = new THREE.Mesh(blackHoleGeometry, blackHoleMaterial);
+blackHole.position.set(100, 40, 100); // Position the black hole
+scene.add(blackHole);
 
 // Add ambient light to the scene
 const ambientLight = new THREE.AmbientLight(0xFFFFFF, 1.5); // Brighter ambient light
@@ -163,7 +175,7 @@ infoBox.appendChild(closeButton);
 const regions = [
   { position: new THREE.Vector3(-11.7, -7.1, -5.9), info: 'Newcastle: 2 Days Road Trip, Hiking, Sandboarding', img: [newcastle1, newcastle2] },
   { position: new THREE.Vector3(-10.8, -8.2, -6.2), info: 'Sydney: Ferry to Fishing Spot', img: [sydney] },
-  { position: new THREE.Vector3(-3.2, 5.6, -13.5), info: 'Hanoi: Paintballing', img: [hanoi] },
+  { position: new THREE.Vector3(-3.2, 5.6, -13.5), info: 'Hanoi: Paintballing + Scubadiving', img: [hanoi1, hanoi2] },
   { position: new THREE.Vector3(-3.6, 3.2, -14.2), info: 'Phu Quoc: Paragliding and Jetskiing', img: [phuquoc1, phuquoc2] },
   { position: new THREE.Vector3(-6, 9.8, 9.6), info: 'San Francisco: Sea Fishing', img: [sanfrancisco] },
   { position: new THREE.Vector3(-5.1, 10.6, 9.2), info: 'Yosemite: Skiing', img: [yosemite] },
@@ -214,10 +226,17 @@ if (moon_intersect.length > 0) {
     <strong>Origin:</strong> Vietnam <br>
     <strong>Study:</strong> Computer Science (2nd Year) <br>
     <strong>Hobbies:</strong> Powerlifting, Skateboarding, BJJ, Traveling <br>
-    <strong>Fav Ice Cream Flavor:</strong> Vanilla
+    <strong>Fav Ice Cream Flavor:</strong> Vanilla <br>
+    <strong>Languages:</strong> Java, C, Python <br>
+    <strong>LinkedIn:</strong> <a href="https://www.linkedin.com/in/tony-bui-3-tb/" target="_blank">My Linkedin</a> <br>
   `;
-  displayTextBox(moonText, []);
+  displayTextBox(moonText, [cat]);
   return;
+}
+
+const blackhole_intersect = raycaster.intersectObject(blackHole);
+if (blackhole_intersect.length > 0) {
+  triggerExplosion();
 }
 
   // Calculate objects intersecting the ray
@@ -236,11 +255,10 @@ const displayTextBox = (text, imgSrcArray) => {
   clickSound.play();
   let imagesHtml = '';
   imgSrcArray.forEach(src => {
-    imagesHtml += `<img src="${src}" alt="Region Image" style="width:490px;height:auto;margin:10px 0;">`;
+    imagesHtml += `<img src="${src}" alt="Region Image" style="width:400px;height:auto;margin:10px 0;">`;
   });
   infoBox.innerHTML = `<button style="position:absolute;top:5px;right:5px;" onclick="this.parentElement.style.display='none'">X</button><p>${text}</p>${imagesHtml}`;
   infoBox.style.display = 'block';
-  console.log("Text box displayed");
 }
 // Add background music
 const listener = new THREE.AudioListener();
@@ -277,11 +295,91 @@ audioLoader.load(laserSound, function(buffer) {
   clickSound.setVolume(1.0);
 });
 
+const boomSound = new THREE.Audio(listener);
+audioLoader.load(explosionSound, function(buffer) {
+  boomSound.setBuffer(buffer);
+  boomSound.setVolume(1.0);
+});
+
+function triggerExplosion() {
+  // Create explosion particles
+  boomSound.play();
+  const particleCount = 5000;
+  const particles = new THREE.Group();
+
+  for (let i = 0; i < particleCount; i++) {
+    const geometry = new THREE.OctahedronGeometry(1); // Increased size
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xFF0000, // Changed color to red
+      transparent: true,
+      opacity: 0.8,
+    });
+    const particle = new THREE.Mesh(geometry, material);
+
+    particle.position.set(
+      Math.random() * 300 - 10, // Reduced position range for better visibility
+      Math.random() * 300 - 10,
+      Math.random() * 300 - 10
+    );
+
+    particles.add(particle);
+  }
+
+  scene.add(particles);
+
+  // Animate particles to move outward
+  const animateParticles = () => {
+    particles.children.forEach(particle => {
+      particle.position.x += (Math.random() - 0.5) * 2;
+      particle.position.y += (Math.random() - 0.5) * 2;
+      particle.position.z += (Math.random() - 0.5) * 2;
+    });
+  };
+
+  const particleAnimation = setInterval(animateParticles, 16); // 60 FPS
+
+  // Fade to black after explosion
+  setTimeout(() => {
+    clearInterval(particleAnimation);
+    fadeToBlack();
+  }, 1000);
+}
+
+function fadeToBlack() {
+  const fadeDiv = document.createElement('div');
+  fadeDiv.style.position = 'fixed';
+  fadeDiv.style.top = '0';
+  fadeDiv.style.left = '0';
+  fadeDiv.style.width = '100%';
+  fadeDiv.style.height = '100%';
+  fadeDiv.style.backgroundColor = 'black';
+  fadeDiv.style.opacity = '0';
+  fadeDiv.style.transition = 'opacity 2s';
+  document.body.appendChild(fadeDiv);
+
+  setTimeout(() => {
+    fadeDiv.style.opacity = '1';
+  }, 100);
+
+  setTimeout(() => {
+    fadeDiv.innerHTML = `
+      <div style="color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; font-size: 24px;">
+        <button id="reload-button" style="padding: 10px 20px; font-size: 18px; margin-top: 20px;">Reverse Space and Time</button>
+      </div>
+    `;
+    document.getElementById('reload-button').addEventListener('click', () => {
+      location.reload();
+    });
+  }, 2100);
+}
+
 // Animation loop to render the scene and update controls
 function animate() {
   requestAnimationFrame(animate);
 
   // Rotate the Earth
+  blackHole.rotation.y += 1;
+  blackHole.rotation.x += 2;
   earth.rotation.y += 0.0009;
   moon.rotation.y += 0.01;
   
@@ -294,3 +392,17 @@ function animate() {
 
 // Start the animation loop
 animate();
+
+// Handle landing screen
+const landingScreen = document.getElementById('landing-screen');
+const closeLandingButton = document.getElementById('close-landing');
+
+closeLandingButton.addEventListener('click', () => {
+  landingScreen.style.display = 'none';
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'h') {
+    landingScreen.style.display = 'flex';
+  }
+});
